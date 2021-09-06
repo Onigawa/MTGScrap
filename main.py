@@ -36,53 +36,47 @@ requests.get('https://oauth.reddit.com/api/v1/me', headers=headers)
 
 
 def get_comment_posts(post_id):
-    try:
-        comments = json.loads(urlopen("https://www.reddit.com/comments/"+post_id+".json").read())
-    except urllib.error.HTTPError:
-        print("Limit request reached: Waiting 1 min.")
-        time.sleep(90)  # Limited to 60 requests per minute
-        comments = json.loads(urlopen("https://www.reddit.com/comments/" + post_id + ".json").read())
+    scrapping = True
+    while scrapping:
+        try:
+            comments = json.loads(urlopen("https://www.reddit.com/comments/" + post_id + ".json").read())
+            scrapping = False
+        except urllib.error.HTTPError:
+            print("Limit request reached: Waiting 1 min.")
+            time.sleep(90)  # Limited to 60 requests per minute
+            print("Retry request.")
 
-    post = comments[0]["data"]["children"][0]
+    post = comments[0]["data"]["children"][0]["data"]
     df = pd.DataFrame()  # initialize dataframe
-
+    if "i.redd.it" in post['url']:
+        url = "https://www.reddit.com" + post["permalink"]
+        image_url = post['url']
+    else:
+        url = post['url']
+        image_url = ""
     for comment in comments[1]["data"]["children"]:
-        if str(post['data']['url']).lower().endswith(".jpg") or str(post['data']['url']).lower().endswith(".png"):
-            body = ""
-            id_comment = ""
-            ups_comment = 0
-            downs_comment = 0
-            score_comment = 0
-            permalink_comment = ""
-        else:
-            body = comment['data']['body']
-            id_comment = comment['data']['id']
-            ups_comment = comment['data']['ups']
-            downs_comment = comment['data']['downs']
-            score_comment = comment['data']['score']
-            permalink_comment = comment['data']['permalink']
         try:
             df = df.append({
-                'subreddit': post['data']['subreddit'],
-                'title': post['data']['title'],
-                'selftext': post['data']['selftext'],
-                'url': post['data']['url'],
-                'id': post['data']['id'],
-                'ups': post['data']['ups'],
-                'created': post['data']['created'],
-                'downs': post['data']['downs'],
-                'upvote_ratio': post['data']['upvote_ratio'],
-                'body': body,
-                'id_comment': id_comment,
-                'ups_comment': ups_comment,
-                'downs_comment': downs_comment,
-                'score_comment': score_comment,
-                'permalink_comment': permalink_comment
+                'subreddit': post['subreddit'],
+                'title': post['title'],
+                'selftext': post['selftext'],
+                'url': url,
+                "image_url": image_url,
+                'id': post['id'],
+                'ups': post['ups'],
+                'created': post['created'],
+                'downs': post['downs'],
+                'upvote_ratio': post['upvote_ratio'],
+                'body': comment['data']['body'],
+                'id_comment': comment['data']['id'],
+                'ups_comment': comment['data']['ups'],
+                'downs_comment': comment['data']['downs'],
+                'score_comment': comment['data']['score'],
+                'permalink_comment': comment['data']['permalink']
 
             }, ignore_index=True)
-        except KeyError as e:
-            print("With error "+ e)
-            print("ERROR on "+post['data']['url'] + " comment: "+comment['data']['id'])
+        except KeyError:
+            print("ERROR on " + url + " comment: " + comment['data']['id'])
 
     return df
 

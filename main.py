@@ -9,9 +9,9 @@ import time
 
 config = yaml.safe_load(open("config.yaml", 'r'))
 
-CLIENT_ID = config.get("client_id")
-SECRET_KEY = config.get("secret_key")
-auth = requests.auth.HTTPBasicAuth(CLIENT_ID, SECRET_KEY)
+REDDIT_CLIENT_ID = config["reddit_api"]["client_id"]
+REDDIT_SECRET_KEY = config["reddit_api"]["secret_key"]
+auth = requests.auth.HTTPBasicAuth(REDDIT_CLIENT_ID, REDDIT_SECRET_KEY)
 
 # here we pass our login method (password), username, and password
 data = {'grant_type': 'password',

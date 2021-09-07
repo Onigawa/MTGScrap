@@ -1,0 +1,10 @@
+reddit_api: # you can get it here https://www.reddit.com/prefs/apps
+    client_id : CLIENT_ID
+    secret_key : SECRET_KEY
+    username: REDDIT_USERNAME
+    password : REDDIT_PASSWORD
+    
+text_analytics:
+    secret_key: MICROSOFT_TEXT_ANALYTICS_KEY
+    endpoint: MICROSOFT_TEXT_ANALYTICS_ENDPOINT #https://YOUR_ENDPOINT.cognitiveservices.azure.com/
+

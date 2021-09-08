@@ -9,28 +9,33 @@ import yaml
 
 
 def generate_headers(config_path="config.yaml"):
-
     """ Generate headers necessary for Reddit API
         :param string config_path: Path to a yaml file containing auth informations for reddit
         :return dict: Dictionary to be used when making a request to the reddit API
     """
 
+    # Getting authentification info from the config file
     config = yaml.safe_load(open(config_path, 'r'))
-
     reddit_client_id = config["reddit_api"]["client_id"]
     reddit_secret_key = config["reddit_api"]["secret_key"]
     reddit_password = config["reddit_api"]["password"]
     reddit_username = config["reddit_api"]["username"]
 
+    # Creating authentification
     auth = requests.auth.HTTPBasicAuth(reddit_client_id, reddit_secret_key)
+    # Choosing the type of authentification
     data = {'grant_type': 'password',
             'username': reddit_username,
             'password': reddit_password}
     headers = {'User-Agent': 'MTGScrap/0.0.1'}
+    # Requesting oauth token to reddit
     res = requests.post('https://www.reddit.com/api/v1/access_token',
                         auth=auth, data=data, headers=headers)
     token = res.json()['access_token']
+    # Add token to headers to be used in all requests
     headers = {**headers, **{'Authorization': f"bearer {token}"}}
+
+    # Keep the authenfication on ~1h
     requests.get('https://oauth.reddit.com/api/v1/me', headers=headers)
     return headers
 
@@ -43,7 +48,7 @@ def get_comment_posts(post_id, client_text_analytics=None):
     :param client_text_analytics: client object from authenticate_client
     :return pandas.DataFrame: DataFrame containing top comments and sentiment if client is set
     """
-    scrapping = True
+    scrapping = True  # Keeping a loop while the request isn't complete
     comments = None
     while scrapping:
         try:
@@ -54,15 +59,25 @@ def get_comment_posts(post_id, client_text_analytics=None):
             time.sleep(90)  # Limited to 60 requests per minute
             print("Retry request.")
 
+    # Post information are available in each comment info
+    # To save computation we extract the info only once
     post = comments[0]["data"]["children"][0]["data"]
+
     df = pd.DataFrame()  # initialize dataframe
+
     if "www.reddit.com" not in post['url']:
+        # Content post have a different url form
+        # We want a reliable url so we use the permalink
         url = "https://www.reddit.com" + post["permalink"]
+        # We still save the content url
         image_url = post['url']
     else:
+        # We can keep the default functionning
         url = post['url']
         image_url = ""
+
     if client_text_analytics is not None:
+        # if the client is available we process with the analysis of the post content
         post_analytics = text_analytics.sentiment_analysis(client_text_analytics, post["selftext"]).iloc[0]
         post_sentiment = post_analytics["sentence_sentiment"]
         post_confidence_positive = post_analytics["sentence_confidence_positive"]
@@ -76,10 +91,13 @@ def get_comment_posts(post_id, client_text_analytics=None):
 
     for comment in comments[1]["data"]["children"]:
         try:
+            # Some comment don't have a text content readable to avoid issue we replace with an empty String
             body_data = comment["data"]['body']
         except KeyError:
             body_data = ""
+
         if client_text_analytics is not None:
+            # We perform sentiment analysis on the comment if client is available
             comment_analytics = text_analytics.sentiment_analysis(client_text_analytics,
                                                                   body_data).iloc[0]
             comment_sentiment = comment_analytics["sentence_sentiment"]
@@ -91,7 +109,9 @@ def get_comment_posts(post_id, client_text_analytics=None):
             comment_confidence_positive = None
             comment_confidence_neutral = None
             comment_confidence_negative = None
+
         try:
+            # We append the info to the previous results
             df = df.append({
                 'subreddit': post['subreddit'],
                 'title': post['title'],
@@ -120,12 +140,12 @@ def get_comment_posts(post_id, client_text_analytics=None):
 
             }, ignore_index=True)
         except KeyError:
+            # In case of an error on read we issue a warning and don't append the data
             print("ERROR on " + url + comment['data']['id'])
 
     return df
 
 
-# params mode = new hot or top
 def get_posts(headers=None, subreddit: str = "magicTCG", mode="hot",
               client_text_analytics=None):
     """ Wrapper function to get back top post of a sub reddit
@@ -143,8 +163,11 @@ def get_posts(headers=None, subreddit: str = "magicTCG", mode="hot",
        :return pandas.df:  with each post obtained, top comment and sentiment analysis if client is set up
 
     """
+
     if headers is None:
+        # If headers is empty we generate them
         headers = generate_headers(config_path="config.yaml")
+    # We issue the request directly
     request_results = requests.get("https://oauth.reddit.com/r/" + subreddit + "/" + mode + "",
                                    headers=headers)
 

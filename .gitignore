@@ -116,3 +116,4 @@ dmypy.json
 #Secret
 config.yaml
 config.yaml
+*.yaml

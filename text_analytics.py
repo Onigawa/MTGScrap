@@ -31,10 +31,11 @@ def sentiment_analysis(client=None, documents: str = None):
     :return pandas.DataFrame: a dataframe containing the sentiment of the sentence and confidence from text analytics
     """
     if documents is None:
-        documents = "I had the best day of my life. I wish you were there with me."
+        documents = ""
     if client is None:
         client = authenticate_client()
     if len(documents) < 3:
+        # If document is empty return empty dataframe
         df = pd.DataFrame({
             "document_sentiment": "Empty",
             "document_confidence_positive": [0.0],
@@ -50,7 +51,9 @@ def sentiment_analysis(client=None, documents: str = None):
         return df
 
     df = pd.DataFrame()
+    # We are only intersted in the first line since we use a single string
     response = client.analyze_sentiment(documents=[documents])[0]
+
     confidence_positive = response.confidence_scores.positive
     confidence_neutral = response.confidence_scores.neutral
     confidence_negative = response.confidence_scores.negative

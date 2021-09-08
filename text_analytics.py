@@ -10,6 +10,11 @@ endpoint = config["text_analytics"]["endpoint"]
 
 
 def authenticate_client():
+    """
+    Create client object to use text analytics
+
+    :return: Client object with information for text analytics
+    """
     ta_credential = AzureKeyCredential(key)
     text_analytics_client = TextAnalyticsClient(
         endpoint=endpoint,
@@ -17,9 +22,18 @@ def authenticate_client():
     return text_analytics_client
 
 
-def sentiment_analysis(client, documents=None):
+def sentiment_analysis(client=None, documents: str = None):
+    """
+    Get sentiment of a sentence
+
+    :param client: client object from authenticate_client()
+    :param string documents: the string to be analysed
+    :return pandas.DataFrame: a dataframe containing the sentiment of the sentence and confidence from text analytics
+    """
     if documents is None:
         documents = "I had the best day of my life. I wish you were there with me."
+    if client is None:
+        client = authenticate_client()
     if len(documents) < 3:
         df = pd.DataFrame({
             "document_sentiment": "Empty",

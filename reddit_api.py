@@ -5,6 +5,25 @@ import json
 from urllib.request import urlopen
 import time
 import text_analytics
+import yaml
+
+config = yaml.safe_load(open("config.yaml", 'r'))
+
+REDDIT_CLIENT_ID = config["reddit_api"]["client_id"]
+REDDIT_SECRET_KEY = config["reddit_api"]["secret_key"]
+REDDIT_PASSWORD = config["reddit_api"]["password"]
+REDDIT_USERNAME = config["reddit_api"]["username"]
+
+auth = requests.auth.HTTPBasicAuth(REDDIT_CLIENT_ID, REDDIT_SECRET_KEY)
+data = {'grant_type': 'password',
+        'username': REDDIT_USERNAME,
+        'password': REDDIT_PASSWORD}
+headers = {'User-Agent': 'MTGScrap/0.0.1'}
+res = requests.post('https://www.reddit.com/api/v1/access_token',
+                    auth=auth, data=data, headers=headers)
+TOKEN = res.json()['access_token']
+headers = {**headers, **{'Authorization': f"bearer {TOKEN}"}}
+requests.get('https://oauth.reddit.com/api/v1/me', headers=headers)
 
 
 def get_comment_posts(post_id, client_text_analytics=None):
@@ -21,7 +40,7 @@ def get_comment_posts(post_id, client_text_analytics=None):
 
     post = comments[0]["data"]["children"][0]["data"]
     df = pd.DataFrame()  # initialize dataframe
-    if "i.redd.it" in post['url']:
+    if "www.reddit.com" not in post['url']:
         url = "https://www.reddit.com" + post["permalink"]
         image_url = post['url']
     else:
@@ -85,14 +104,13 @@ def get_comment_posts(post_id, client_text_analytics=None):
 
             }, ignore_index=True)
         except KeyError:
-            print("ERROR on " + url + " comment: " + comment['data']['id'])
-            print("Permalink: https://www.reddit.com" + comment["data"]["permalink"])
+            print("ERROR on " + url + comment['data']['id'])
 
     return df
 
 
 # params mode = new hot or top
-def get_posts(headers, subreddit="magicTCG", mode="hot", client_text_analytics=None):
+def get_posts(headers=headers, subreddit="magicTCG", mode="hot", client_text_analytics=None):
     request_results = requests.get("https://oauth.reddit.com/r/" + subreddit + "/" + mode + "",
                                    headers=headers)
 

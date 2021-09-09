@@ -10,32 +10,41 @@ account_key = config["blob_storage"]["AccountKey"]
 connexion_string = config["blob_storage"]["DefaultConnexionString"]
 blob_service_client = BlobServiceClient(account_url=account_url,
                                         credential=account_key)
-container_client_azure = blob_service_client.get_container_client(config["blob_storage"]["ContainerName"])
 
 
-def list_blob_custom(container_client):
+
+def list_blob_custom(container_name):
+    container_client = blob_service_client.get_container_client(container_name)
     # List Blobs
     blob_list = container_client.list_blobs()
     return blob_list
 
 
-def upload_blob_custom(container_client, source_path, destination_path):
+def upload_blob_custom(container_name, source_path, destination_path):
     # Upload
+    container_client = blob_service_client.get_container_client(container_name)
     with open(source_path, "rb") as data:
         blob_client = container_client.get_blob_client(destination_path)
-        blob_client.upload_blob(data, overwrite=False)
+        blob_client.upload_blob(data, overwrite=True)
 
 
-def download_blob_custom(container_client, source_path, destination_path):
+def download_blob_custom(container_name, source_path, destination_path):
     # Download
+    container_client = blob_service_client.get_container_client(container_name)
     with open(destination_path, "wb") as my_blob:
         blob_client = container_client.get_blob_client(source_path)
         downloaded_blob = blob_client.download_blob()
         downloaded_blob.readinto(my_blob)
 
 
-def upload_from_folder(path, container_client, prefix: str = ""):
-    for file in os.listdir(path):
+def upload_from_folder(path, container_name, prefix: str = "", suffix: str = None):
+    container_client = blob_service_client.get_container_client(container_name)
+    if suffix is None:
+        files = os.listdir(path)
+    else:
+        files = os.listdir(path)
+        files = [s for s in files if suffix in s]
+    for file in files:
         with open(path + file, "rb") as data:
             blob_client = container_client.get_blob_client(prefix + file)
-            blob_client.upload_blob(data)
+            blob_client.upload_blob(data,overwrite=True)

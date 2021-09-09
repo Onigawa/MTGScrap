@@ -235,5 +235,4 @@ def split(data, destination_folder="./results"):
 
         with open(comment_path, "w", encoding='utf-8') as post:
             post.write(row["body"])
-
     return

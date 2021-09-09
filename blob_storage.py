@@ -1,7 +1,6 @@
-from datetime import datetime, timedelta
-from azure.storage.blob import BlobServiceClient, generate_account_sas, ResourceTypes, AccountSasPermissions, \
-    BlobClient
+from azure.storage.blob import BlobServiceClient
 import yaml
+import os
 
 config = yaml.safe_load(open("config.yaml", 'r'))
 account_url = config["blob_storage"]["DefaultEndpointsProtocol"] + "://" + \
@@ -11,23 +10,32 @@ account_key = config["blob_storage"]["AccountKey"]
 connexion_string = config["blob_storage"]["DefaultConnexionString"]
 blob_service_client = BlobServiceClient(account_url=account_url,
                                         credential=account_key)
+container_client_azure = blob_service_client.get_container_client(config["blob_storage"]["ContainerName"])
 
 
-container_client = blob_service_client.get_container_client('textdocuments')
-
-# List Blobs
-blob_list = container_client.list_blobs()
-for blob in blob_list:
-    print(blob.name + '\n')
+def list_blob(container_client):
+    # List Blobs
+    blob_list = container_client.list_blobs()
+    return blob_list
 
 
-# Upload
-with open("./test.txt", "rb") as data:
-    blob_client = container_client.get_blob_client('test.txt')
-    blob_client.upload_blob(data)
+def upload_blob(container_client, source_path, destination_path):
+    # Upload
+    with open(source_path, "rb") as data:
+        blob_client = container_client.get_blob_client(destination_path)
+        blob_client.upload_blob(data)
 
-# Download
-with open("./BlockDestination.txt", "wb") as my_blob:
-    blob_client = container_client.get_blob_client('test.txt')
-    downloaded_blob = blob_client.download_blob()
-    downloaded_blob.readinto(my_blob)
+
+def download_blob(container_client, source_path, destination_path):
+    # Download
+    with open(destination_path, "wb") as my_blob:
+        blob_client = container_client.get_blob_client(source_path)
+        downloaded_blob = blob_client.download_blob()
+        downloaded_blob.readinto(my_blob)
+
+
+def upload_from_folder(path, container_client):
+    for file in os.listdir(path):
+        with open(path + file, "rb") as data:
+            blob_client = container_client.get_blob_client(file)
+            blob_client.upload_blob(data)

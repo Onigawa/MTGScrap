@@ -13,20 +13,20 @@ blob_service_client = BlobServiceClient(account_url=account_url,
 container_client_azure = blob_service_client.get_container_client(config["blob_storage"]["ContainerName"])
 
 
-def list_blob(container_client):
+def list_blob_custom(container_client):
     # List Blobs
     blob_list = container_client.list_blobs()
     return blob_list
 
 
-def upload_blob(container_client, source_path, destination_path):
+def upload_blob_custom(container_client, source_path, destination_path):
     # Upload
     with open(source_path, "rb") as data:
         blob_client = container_client.get_blob_client(destination_path)
-        blob_client.upload_blob(data)
+        blob_client.upload_blob(data,overwrite=False)
 
 
-def download_blob(container_client, source_path, destination_path):
+def download_blob_custom(container_client, source_path, destination_path):
     # Download
     with open(destination_path, "wb") as my_blob:
         blob_client = container_client.get_blob_client(source_path)
@@ -34,7 +34,8 @@ def download_blob(container_client, source_path, destination_path):
         downloaded_blob.readinto(my_blob)
 
 
-def upload_from_folder(path, container_client):
+def upload_from_folder(path, container_client,prefix=""):
+
     for file in os.listdir(path):
         with open(path + file, "rb") as data:
             blob_client = container_client.get_blob_client(file)

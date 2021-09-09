@@ -6,6 +6,8 @@ from urllib.request import urlopen
 import time
 import text_analytics
 import yaml
+import os
+import shutil
 
 
 def generate_headers(config_path="config.yaml"):
@@ -178,3 +180,60 @@ def get_posts(headers=None, subreddit: str = "magicTCG", mode="hot",
         # append relevant data to dataframe
         df = df.append(get_comment_posts(post['data']['id'], client_text_analytics))
     return df
+
+
+def split(data, destination_folder="./results"):
+    if not os.path.exists(destination_folder):
+        os.makedirs(destination_folder)
+
+    for index, row in data.iterrows():
+        post_path = destination_folder + "/" + (row["subreddit"] + "_" + row["id"]
+                                                + "_POST.txt").replace("/", "|")
+        image_path = destination_folder + "/" + (row["subreddit"] + "_" + row["id"]
+                                                 + "_IMAGE.").replace("/", "|")
+        comment_path = destination_folder + "/" + (row["subreddit"] + "_" + row["id"] + "_"
+                                                   + row["id_comment"] + "_COMMENT.txt").replace("/", "|")
+        if not os.path.exists(post_path):
+            with open(post_path, "w", encoding='utf-8') as post:
+                post.write(row["title"] + "\n" + row["selftext"])
+
+        if ".png" in row["image_url"].lower():
+            if not os.path.exists(image_path + "png"):
+
+                # Open the url image, set stream to True, this will return the stream content.
+                r = requests.get(row["image_url"], stream=True)
+
+                # Check if the image was retrieved successfully
+                if r.status_code == 200:
+                    # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
+                    r.raw.decode_content = True
+
+                    # Open a local file with wb ( write binary ) permission.
+                    with open(image_path + "png", 'wb') as f:
+                        shutil.copyfileobj(r.raw, f)
+
+                # Download image
+                pass
+
+        if ".jpg" in row["image_url"].lower():
+            if not os.path.exists(image_path + "jpg"):
+
+                # Open the url image, set stream to True, this will return the stream content.
+                r = requests.get(row["image_url"], stream=True)
+
+                # Check if the image was retrieved successfully
+                if r.status_code == 200:
+                    # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
+                    r.raw.decode_content = True
+
+                    # Open a local file with wb ( write binary ) permission.
+                    with open(image_path + "jpg", 'wb') as f:
+                        shutil.copyfileobj(r.raw, f)
+
+                # Download image
+                pass
+
+        with open(comment_path, "w", encoding='utf-8') as post:
+            post.write(row["body"])
+
+    return

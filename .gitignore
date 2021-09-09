@@ -113,6 +113,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+#Data
+results/
+
 #Secret
 config.yaml
 config.yaml

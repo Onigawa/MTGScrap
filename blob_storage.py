@@ -23,7 +23,7 @@ def upload_blob_custom(container_client, source_path, destination_path):
     # Upload
     with open(source_path, "rb") as data:
         blob_client = container_client.get_blob_client(destination_path)
-        blob_client.upload_blob(data,overwrite=False)
+        blob_client.upload_blob(data, overwrite=False)
 
 
 def download_blob_custom(container_client, source_path, destination_path):
@@ -34,9 +34,8 @@ def download_blob_custom(container_client, source_path, destination_path):
         downloaded_blob.readinto(my_blob)
 
 
-def upload_from_folder(path, container_client,prefix=""):
-
+def upload_from_folder(path, container_client, prefix: str = ""):
     for file in os.listdir(path):
         with open(path + file, "rb") as data:
-            blob_client = container_client.get_blob_client(file)
+            blob_client = container_client.get_blob_client(prefix + file)
             blob_client.upload_blob(data)
